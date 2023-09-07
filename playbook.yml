@@ -1,5 +1,5 @@
 - name: Configurer et déployer Apache sur les noeuds cibles
-  hosts: nodes
+  hosts: ec2
   become: true
 
   tasks:
