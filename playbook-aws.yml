@@ -1,0 +1,42 @@
+- name: Configurer et déployer Apache sur les noeuds cibles
+  hosts: ec2
+  become: true
+  vars:
+    apache_package_name: httpd
+    apache_config_path: /etc/httpd/conf.d/my_site.conf
+    apache_service_name: httpd
+
+  tasks:
+    - name: Installer le paquet Apache
+      ansible.builtin.package:
+        name: "{{ apache_package_name }}"
+        state: present
+
+    - name: Activer et démarrer le service Apache
+      ansible.builtin.service:
+        name: "{{ apache_service_name }}"
+        state: started
+        enabled: yes
+
+    - name: Copier le fichier de configuration Apache personnalisé
+      ansible.builtin.copy:
+        src: files/apache.conf
+        dest: "{{ apache_config_path }}"
+      notify: Reload Apache
+
+    - name: Créer un répertoire pour l'application web
+      ansible.builtin.file:
+        path: /var/www/html/app
+        state: directory
+        mode: '0755'
+
+    - name: Copier le fichier HTML simple
+      ansible.builtin.copy:
+        src: files/index.html
+        dest: /var/www/html/app/index.html
+
+  handlers:
+    - name: Reload Apache
+      ansible.builtin.service:
+        name: "{{ apache_service_name }}"
+        state: reloaded
