@@ -1,23 +1,35 @@
 - name: Configurer et déployer Apache sur les noeuds cibles
   hosts: ec2
   become: true
+  vars:
+    apache_package_name: apache2
+    apache_config_path: /etc/apache2/sites-available/000-default.conf
+    apache_service_name: apache2
 
   tasks:
-    - name: Installer le paquet 'apache2'
+    - name: Set Apache variables RedHat
+      set_fact:
+        apache_package_name: httpd
+        apache_config_path: /etc/httpd/conf/httpd.conf
+        apache_service_name: httpd
+      when: ansible_os_family == "RedHat"
+
+    - name: Installer le paquet Apache
       ansible.builtin.package:
-        name: apache2
+        name: "{{ apache_package_name }}"
         state: present
 
     - name: Activer et démarrer le service Apache
       ansible.builtin.service:
-        name: apache2
+        name: "{{ apache_service_name }}"
         state: started
         enabled: yes
 
     - name: Copier le fichier de configuration Apache personnalisé
       ansible.builtin.copy:
         src: files/apache.conf
-        dest: /etc/apache2/sites-available/000-default.conf
+        dest: "{{ apache_config_path }}"
+      notify: Reload Apache
 
     - name: Créer un répertoire pour l'application web
       ansible.builtin.file:
@@ -29,3 +41,9 @@
       ansible.builtin.copy:
         src: files/index.html
         dest: /var/www/html/app/index.html
+
+  handlers:
+    - name: Reload Apache
+      ansible.builtin.service:
+        name: "{{ apache_service_name }}"
+        state: reloaded
